@@ -15,13 +15,14 @@ else:
 	isThreshed = "NoThresh"
 
 ###### EXPYRIMENT INITIALIZATION ######
-exp = design.Experiment("Static Dog Localizer")
-exp.data.__init__("Run%02d" % runNumber, time_stamp=False)
+exp = design.Experiment(name="Inversion", filename_suffix="Run%02d" % runNumber)
+# exp.data.__init__("Run%02d" % runNumber, time_stamp=False)
 control.initialize(exp)
 fixCross = stimuli.FixCross()
 theKeyboard = exp.keyboard
 myKeyboard = io.Keyboard
-exp.events.__init__("Run%02d" % runNumber, time_stamp=False)
+# io.EventFile.rename("%s_Sub%02d_Run%02d.csv" % (exp.name, subjectNumber, runNumber))
+# exp.events.__init__("Run%02d" % runNumber, time_stamp=False)
 
 ###### CONTROL PANEL ######
 # Define most experimental parameters here.
@@ -39,7 +40,9 @@ imagesPerBlock = 20
 imagePresentationTime = 250 #ms
 firstISI = 500 #ms
 secondISI = 1200
-fixationTime = 1000 #ms
+fixationTime = 14000 #ms
+sameKey = misc.constants.K_f
+differentKey = misc.constants.K_j
 
 # Load in stimuli
 stimTextFilePath = "/Users/samweiller/Dropbox-Dilks/Dropbox/inversion"
@@ -90,31 +93,32 @@ for blockNumber in range(0,8):
 exp.shuffle_blocks()
 
 ###### RUN EXPERIMENT ######
-exp.save_design("StatLoc_Subject%02d_design.csv" % subjectNumber)
 control.start(subject_id=subjectNumber, skip_ready_screen=True) # Start the experiment
 
-stimuli.TextLine("Experiment is Prepped! Waiting for R...").present()
-theKeyboard.wait(keys=misc.constants.K_r)
-exp.events.log("INITIAL TRIGGER")
+stimuli.TextLine("Experiment is Prepped! Waiting for t to begin...").present()
+theKeyboard.wait(keys=misc.constants.K_t)
+exp.events.log("TRIGGERINIT")
+exp.data.add("TRIGGERINIT,%d" % exp.clock.time)
 
-fixCross.set_logging(False)
+# fixCross.set_logging(False)
 
 for block in exp.blocks:
+	exp.events.log("Block %d" % exp.blocks.index(block))
 	exp.clock.reset_stopwatch()
-	exp.events.log("Pre Fixation Start")
-	fixCross.present()
-	exp.clock.wait(fixationTime)
-	exp.events.log("Pre Fixation End: %d" % exp.clock.stopwatch_time)
+	exp.data.add("Fixation Start,0,%d" % exp.clock.time)
+	exp.clock.wait(fixationTime-fixCross.present())
+	exp.data.add("Fixation End,0,%d,%d" % (exp.clock.time, exp.clock.stopwatch_time))
 
 	exp.events.log(block)
-	exp.events.log("Starting Block %d" % exp.blocks.index(block))
+	exp.data.add("Block Start,%d,%d" % (exp.blocks.index(block), exp.clock.time))
 
 	blockStartTime = exp.clock.time
 
 	for trial in block.trials:
-		exp.clock.reset_stopwatch()
-		exp.events.log("Trial %02d Start" % block.trials.index(trial))
-		exp.events.log(trial.get_factor("Image Name"))
+		exp.events.log("Trial %d" % block.trials.index(trial))
+
+		# trial.stimuli[0].set_logging(False)
+		# trial.stimuli[1].set_logging(False)
 
 		exp.clock.wait(imagePresentationTime - trial.stimuli[0].present())
 		exp.clock.wait(firstISI - fixCross.present())
@@ -122,38 +126,30 @@ for block in exp.blocks:
 		exp.clock.wait(imagePresentationTime - trial.stimuli[1].present())
 		fixCross.present()
 
-		# keyPressed = exp.clock.wait(secondISI, function = keyPressed = theKeyboard.check())
-
-		(keyPressed, whenPressed) = theKeyboard.wait(duration=secondISI-3)
+		(keyPressed, whenPressed) = theKeyboard.wait(duration=secondISI)
 		
-		if whenPressed == None:
-			whenPressed = secondISI
+		if whenPressed != None:
+			exp.clock.wait(secondISI-whenPressed)
 
-		exp.clock.wait(secondISI-whenPressed)
+		if keyPressed == sameKey:
+			exp.data.add("%d,%d,same" % (exp.blocks.index(block), block.trials.index(trial)))
+		elif keyPressed == differentKey:
+			exp.data.add("%d,%d,different" % (exp.blocks.index(block), block.trials.index(trial)))
+		elif keyPressed == None:
+			exp.data.add("%d,%d,None" % (exp.blocks.index(block), block.trials.index(trial)))
+		else:
+			exp.data.add("%d,%d,invalid" % (exp.blocks.index(block), block.trials.index(trial)))
 
+		# exp.clock.wait(secondISI-whenPressed)
 
-		# print keyPressed
+	exp.data.add("Block End,%d,%d,%d" % (exp.blocks.index(block), exp.clock.time, exp.clock.time-blockStartTime))
+	exp.events.log("Block End,%d,%d,%d" % (exp.blocks.index(block), exp.clock.time, exp.clock.time-blockStartTime))
 
-		# fixCross.present()
-		# trial.stimuli[0].set_logging(False)
-		# exp.clock.wait(ISI/2 -trial.stimuli[0].present())
-		# trial.stimuli[0].present()
-
-		# exp.clock.wait(imagePresentationTime - trial.stimuli[0].present())
-		exp.events.log("Trial End")
-
-
-
-	exp.events.log("Block %d Ending :: %d" % (exp.blocks.index(block), exp.clock.time-blockStartTime))
 
 exp.clock.reset_stopwatch()
-exp.events.log("Post Fixation Start")
+ exp.data.add("Fixation Start,0,%d" % exp.clock.time)
 fixCross.present()
 exp.clock.wait(fixationTime)
-exp.events.log("Post Fixation End: %d" % exp.clock.stopwatch_time)
+exp.data.add("Fixation End,0,%d,%d" % (exp.clock.time, exp.clock.stopwatch_time))
 
-
-#print imageNames
 control.end()
-
-
