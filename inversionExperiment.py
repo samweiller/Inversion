@@ -26,13 +26,10 @@ else:
 
 ###### EXPYRIMENT INITIALIZATION ######
 exp = design.Experiment(name="Inversion", filename_suffix="Run%02d" % runNumber)
-# exp.data.__init__("Run%02d" % runNumber, time_stamp=False)
 control.initialize(exp)
 fixCross = stimuli.FixCross()
 theKeyboard = exp.keyboard
 myKeyboard = io.Keyboard
-# io.EventFile.rename("%s_Sub%02d_Run%02d.csv" % (exp.name, subjectNumber, runNumber))
-# exp.events.__init__("Run%02d" % runNumber, time_stamp=False)
 
 ###### CONTROL PANEL ######
 # Define most experimental parameters here.
@@ -55,7 +52,7 @@ sameKey = misc.constants.K_f
 differentKey = misc.constants.K_j
 
 # Load in stimuli
-stimTextFilePath = "/Users/samweiller/Dropbox-Dilks/Dropbox/inversion"
+stimTextFilePath = "/Users/dilkslab/Dropbox/inversion"
 stimTextFilename = "%s/stimNames%sCBL%d.csv" % (stimTextFilePath, isThreshed, CBL)
 myFilenames = []
 csvReader = reader(open(stimTextFilename, 'rb'))
@@ -127,9 +124,6 @@ for block in exp.blocks:
 	for trial in block.trials:
 		exp.events.log("Trial %d" % block.trials.index(trial))
 
-		# trial.stimuli[0].set_logging(False)
-		# trial.stimuli[1].set_logging(False)
-
 		exp.clock.wait(imagePresentationTime - trial.stimuli[0].present())
 		exp.clock.wait(firstISI - fixCross.present())
 
@@ -150,14 +144,12 @@ for block in exp.blocks:
 		else:
 			exp.data.add("%d,%d,invalid" % (exp.blocks.index(block), block.trials.index(trial)))
 
-		# exp.clock.wait(secondISI-whenPressed)
-
 	exp.data.add("Block End,%d,%d,%d" % (exp.blocks.index(block), exp.clock.time, exp.clock.time-blockStartTime))
 	exp.events.log("Block End,%d,%d,%d" % (exp.blocks.index(block), exp.clock.time, exp.clock.time-blockStartTime))
 
 
 exp.clock.reset_stopwatch()
- exp.data.add("Fixation Start,0,%d" % exp.clock.time)
+exp.data.add("Fixation Start,0,%d" % exp.clock.time)
 fixCross.present()
 exp.clock.wait(fixationTime)
 exp.data.add("Fixation End,0,%d,%d" % (exp.clock.time, exp.clock.stopwatch_time))
