@@ -1,3 +1,13 @@
+### INVERSION
+##	Written by Sam Weiller, 2015
+##	Contact: sam.weiller@gmail.com
+
+"""
+VERSION HISTORY
+
+1.00	2/2/15	Finalized script, ready for deployment pending final test.
+	
+"""
 import os
 from expyriment import design, control, stimuli, io, misc
 import numpy as np
